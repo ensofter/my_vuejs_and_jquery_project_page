@@ -9,25 +9,33 @@
 </head>
 <body>
 
-    <div id="search">
+    <div id="search" @click="showViewed=false">
 
-        <a class="viewed-btn btn-floating waves-effect"><i class="material-icons">turned_in_not</i></a>
+        <a class="viewed-btn btn-floating waves-effect" @click.stop="showViewed = !showViewed">
+            <i class="material-icons">turned_in_not</i>
+        </a>
 
-        <div class="viewed-menu card" style="display: none">
-            <ul>
-                <li>
-                    <span>first</span>
-                    <a class="btn btn-small">удалить</a>
+        <div class="viewed-menu card" v-if="showViewed" @click.stop="">
+            <ul v-if="vievedFilms.length>0">
+                <li v-for="(film, i) in vievedFilms">
+                    <span>{{++i}}. {{film.title}}</span>
+                    <a class="btn btn-small" @click.stop="deleteFilm(film)">удалить</a>
                 </li>
                 <li>second</li>
                 <li>third</li>
             </ul>
+            <span v-else>У вас не добавлено ни одного фильма</span>
         </div>
 
-        <h5>Привет</h5>
+        <h5>{{header}}</h5>
 
         <div id="search-console">
-            <input type="text" id="search-input" style="color: #595959">
+            <input type="text" id="search-input" style="color: #595959" v-model='request' @focus="request=''">
+        </div>
+
+        <div class="card film-card" v-for="(film, i) in filteredFilms" v-bind:id="i">
+            <p>{{++i}}. {{film.title}}</p>
+            <a class="btn waves-effect" @click.stop="addFilmToViewed(film)">Добавить в просмотр</a>
         </div>
 
 
@@ -37,8 +45,45 @@
     <script src="https://unpkg.com/vue"></script>
 
     <script>
+        let initHeader = "Введи запрос ищешь ты который";
+
         let vm = new Vue({
-            //опции нашего приложения
+           el: "#search",
+           data: {
+                request: initHeader,
+                films: [],
+                showViewed: false,
+                vievedFilms: [],
+           },
+           computed: {
+                header(){
+                    return this.request === "" || this.request === initHeader ? "Ничего не ищем" : `Ищем: ${this.request.toUpperCase()}`;
+                },
+                filteredFilms(){
+                    if (this.request !== initHeader && this.request !== '' && this.request !== ' '){
+                        return this.films.filter( el => el.title.toLowerCase().includes(this.request.toLowerCase()))
+                    } else {
+                        return this.films;
+                    }
+                }
+           },
+           methods: {
+                addFilmToViewed(film){
+                    if (!this.vievedFilms.find(el => el.title === film.title)) {
+                        this.vievedFilms.push(film);
+                    }
+                    this.showViewed = true;
+                    setTimeout(() => {
+                        this.showViewed = false;
+                    }, 500)
+                },
+                deleteFilm({title}){
+                    this.vievedFilms = this.vievedFilms.filter( el => el.title !== title);
+                }
+           },
+           async mounted(){
+                this.films = await fetch('https://swapi.dev/api/films/').then(res => res.json()).then(data => data.results)
+           }
         })
     </script>
 
